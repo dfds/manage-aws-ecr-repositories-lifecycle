@@ -1,0 +1,72 @@
+[tool.black]
+line-length = 100
+target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '''
+(
+  /(
+      \.eggs
+    | \.git
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+    | logs
+    | backups
+  )/
+)
+'''
+
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "manage-aws-ecr-repositories-lifecycle"
+version = "1.0.0"
+description = "AWS ECR Repository Lifecycle Policy Management Tool"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "DFDS", email = "engineering@dfds.com"}
+]
+keywords = ["aws", "ecr", "docker", "lifecycle", "policy", "management"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities"
+]
+dependencies = [
+    "boto3>=1.34.0",
+    "botocore>=1.34.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "boto3-stubs[ecr]>=1.34.0"
+]
+
+[project.scripts]
+ecr-lifecycle-manager = "ecr_lifecycle_manager:main"
+
+[project.urls]
+Homepage = "https://github.com/dfds/manage-aws-ecr-repositories-lifecycle"
+Repository = "https://github.com/dfds/manage-aws-ecr-repositories-lifecycle"
+Issues = "https://github.com/dfds/manage-aws-ecr-repositories-lifecycle/issues"
