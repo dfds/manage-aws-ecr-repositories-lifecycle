@@ -7,6 +7,7 @@ It handles policy application, backup, and validation operations.
 
 import json
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -95,6 +96,32 @@ class ECRPolicyManager:
                 self.logger.error(f"Failed to get lifecycle policy for {repository_name}: {e}")
                 raise
 
+    def _sanitize_filename(self, filename: str) -> str:
+        """
+        Sanitize a string to be safe for use as a filename.
+
+        Replaces special characters and filesystem-unsafe characters with underscores.
+
+        Args:
+            filename: The original filename string
+
+        Returns:
+            Sanitized filename string safe for filesystem use
+        """
+        # Replace any character that's not alphanumeric, dash, or dot with underscore
+        # This covers slashes, spaces, and other special characters
+        sanitized = re.sub(r'[^\w\-.]', '_', filename)
+
+        # Remove multiple consecutive underscores and clean up
+        sanitized = re.sub(r'_{2,}', '_', sanitized)
+        sanitized = sanitized.strip('_')
+
+        # Ensure it's not empty and not just dots
+        if not sanitized or sanitized.replace('.', '').replace('_', '') == '':
+            sanitized = 'unnamed_repository'
+
+        return sanitized
+
     def backup_lifecycle_policy(self, repository_name: str, policy: Dict) -> str:
         """
         Backup an existing lifecycle policy to a file.
@@ -107,14 +134,20 @@ class ECRPolicyManager:
             Path to the backup file
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_filename = f"backup_{repository_name}_{timestamp}.json"
+        # Sanitize repository name for filename - replace special characters with underscores
+        safe_repo_name = self._sanitize_filename(repository_name)
+        backup_filename = f"backup_{safe_repo_name}_{timestamp}.json"
         backup_path = self.backup_dir / backup_filename
 
         try:
             with open(backup_path, 'w') as backup_file:
                 json.dump(policy, backup_file, indent=2)
 
-            self.logger.info(f"Backed up existing policy for {repository_name} to {backup_path}")
+            # Log with clarification if repository name was sanitized
+            if safe_repo_name != repository_name:
+                self.logger.info(f"Backed up existing policy for '{repository_name}' to {backup_path} (filename sanitized: '{repository_name}' -> '{safe_repo_name}')")
+            else:
+                self.logger.info(f"Backed up existing policy for {repository_name} to {backup_path}")
             return str(backup_path)
 
         except Exception as e:

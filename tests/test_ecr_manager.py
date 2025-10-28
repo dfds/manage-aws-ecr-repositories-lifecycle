@@ -410,6 +410,58 @@ class TestECRPolicyManager:
         assert stats['skipped'] == 0
         assert stats['errors'] == 0
 
+    def test_sanitize_filename_normal_name(self, ecr_manager):
+        """Test filename sanitization with normal repository name."""
+        result = ecr_manager._sanitize_filename('my-repo')
+        assert result == 'my-repo'
+
+    def test_sanitize_filename_with_special_chars(self, ecr_manager):
+        """Test filename sanitization with special characters."""
+        result = ecr_manager._sanitize_filename('my/repo:latest')
+        assert result == 'my_repo_latest'
+
+    def test_sanitize_filename_with_spaces_and_symbols(self, ecr_manager):
+        """Test filename sanitization with spaces and various symbols."""
+        result = ecr_manager._sanitize_filename('my repo@#$%^&*()+name')
+        assert result == 'my_repo_name'
+
+    def test_sanitize_filename_with_multiple_underscores(self, ecr_manager):
+        """Test that multiple consecutive underscores are cleaned up."""
+        result = ecr_manager._sanitize_filename('my///repo:::name')
+        assert result == 'my_repo_name'
+
+    def test_sanitize_filename_empty_or_invalid(self, ecr_manager):
+        """Test filename sanitization with empty or invalid input."""
+        result = ecr_manager._sanitize_filename('///.:::#@!')
+        assert result == 'unnamed_repository'
+
+        result = ecr_manager._sanitize_filename('')
+        assert result == 'unnamed_repository'
+
+    def test_backup_lifecycle_policy_with_special_chars(self, ecr_manager, sample_policy, tmp_path):
+        """Test backing up a policy with special characters in repository name."""
+        # Set up temporary backup directory
+        ecr_manager.backup_dir = tmp_path / "backups"
+        ecr_manager.backup_dir.mkdir()
+
+        with patch('src.ecr_manager.datetime') as mock_datetime:
+            mock_datetime.now.return_value.strftime.return_value = "20241027_143000"
+
+            backup_path = ecr_manager.backup_lifecycle_policy('my/repo:latest', sample_policy)
+
+            # Verify the filename is sanitized
+            expected_filename = "backup_my_repo_latest_20241027_143000.json"
+            assert backup_path.endswith(expected_filename)
+
+            # Verify backup file was created and contains correct content
+            backup_file = Path(backup_path)
+            assert backup_file.exists()
+
+            with open(backup_file, 'r') as f:
+                backed_up_policy = json.load(f)
+
+            assert backed_up_policy == sample_policy
+
 
 class TestPolicyValidation:
     """Test cases specifically for policy validation functionality."""

@@ -249,7 +249,24 @@ Before applying any policy changes, the tool automatically:
 
 1. Creates timestamped backups of existing policies in the `backups/` directory
 2. Names backups as: `backup_{repository_name}_{timestamp}.json`
-3. Logs backup creation for audit purposes
+3. **Sanitizes repository names** for safe filenames (special characters become underscores)
+4. Logs backup creation for audit purposes
+
+### Filename Sanitization
+
+Repository names containing special characters are automatically sanitized for backup filenames:
+
+- **Special characters** (`/`, `:`, `@`, `#`, etc.) → replaced with underscores
+- **Spaces** → replaced with underscores
+- **Multiple consecutive underscores** → collapsed to single underscore
+- **Invalid names** (empty or only special chars) → becomes `unnamed_repository`
+
+**Examples:**
+```text
+my/repo:latest          → backup_my_repo_latest_20241027_143000.json
+my repo@service         → backup_my_repo_service_20241027_143000.json
+normal-repo             → backup_normal-repo_20241027_143000.json (no change needed)
+```
 
 ## Migration Context
 
